@@ -7,8 +7,8 @@ import { fetchMatches } from "@/lib/api"
 import { formatMatchTime, getMatchStatus, getTimeUntilMatch } from "@/lib/utils"
 import { CountdownTimer } from "@/components/countdown-timer"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import { ArrowLeft, AlertCircle } from "lucide-react"
 import { ArtPlayer } from "@/components/art-player"
 
@@ -49,12 +49,10 @@ export default function PlayerPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="container mx-auto px-2 sm:px-4 py-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading match...</p>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading match...</p>
         </div>
       </div>
     )
@@ -62,116 +60,91 @@ export default function PlayerPage() {
 
   if (error || !match) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="container mx-auto px-2 sm:px-4 py-8">
-          <div className="mb-6">
-            <Button onClick={() => router.push("/")} variant="outline" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Home
-            </Button>
-          </div>
-          <Card>
-            <CardContent className="p-6 sm:p-8 text-center">
-              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">{error || "Match Not Found"}</h1>
-              <p className="text-gray-600 mb-4 text-sm sm:text-base">
-                {error === "Match not found"
-                  ? "The requested match could not be found."
-                  : "There was an error loading the match data."}
-              </p>
-              <Button onClick={() => router.push("/")} variant="outline">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Home
-              </Button>
-            </CardContent>
-          </Card>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{error || "Match Not Found"}</h1>
+          <p className="text-gray-600 mb-4">
+            {error === "Match not found"
+              ? "The requested match could not be found."
+              : "There was an error loading the match data."}
+          </p>
+          <Button onClick={() => router.push("/")} variant="outline">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Home
+          </Button>
         </div>
       </div>
     )
   }
 
-  const { date, time } = formatMatchTime(match.match_time)
   const status = getMatchStatus(match.match_time)
   const timeUntilMatch = getTimeUntilMatch(match.match_time)
   const canWatch = status === "live" || timeUntilMatch <= 600000 // 10 minutes before
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        <div className="mb-4 sm:mb-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col items-center justify-center">
+      <div className="w-full max-w-2xl px-2 sm:px-4 py-4 sm:py-8">
+        <div className="mb-6 flex items-center">
           <Button onClick={() => router.push("/")} variant="outline" size="sm">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Matches
           </Button>
+          <div className="ml-4">
+            <Badge variant="outline" className="text-xs sm:text-sm">{match.league || "Football"}</Badge>
+            {status === "live" && (
+              <Badge variant="destructive" className="animate-pulse ml-2 flex items-center text-xs sm:text-sm">
+                <div className="w-2 h-2 bg-white rounded-full mr-1"></div>
+                LIVE
+              </Badge>
+            )}
+          </div>
         </div>
 
-        <Card className="mb-4 sm:mb-6">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
-              <Badge variant="outline" className="text-xs sm:text-sm">{match.league || "Football"}</Badge>
-              {status === "live" && (
-                <Badge variant="destructive" className="animate-pulse flex items-center text-xs sm:text-sm">
-                  <div className="w-2 h-2 bg-white rounded-full mr-1"></div>
-                  LIVE
-                </Badge>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-11 gap-4 items-center mb-4 sm:mb-6">
-              <div className="col-span-1 sm:col-span-4 text-center flex flex-col items-center">
-                <img
-                  src={match.home_img || "/placeholder.svg?height=80&width=80"}
-                  alt={match.home_name || "Home Team"}
-                  className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-2 object-contain"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement
-                    target.src = "/placeholder.svg?height=80&width=80"
-                  }}
+        {/* Show only timer view if not live or no links */}
+        {!canWatch || !match.links || match.links.length === 0 ? (
+          <div className="flex flex-col items-center justify-center bg-white rounded-xl shadow-lg p-8 sm:p-12">
+            <h2 className="text-xl sm:text-2xl font-bold mb-4 text-gray-900">
+              {match.home_name || "Home Team"} <span className="text-gray-400">vs</span> {match.away_name || "Away Team"}
+            </h2>
+            <img
+              src={match.home_img || "/placeholder.svg?height=80&width=80"}
+              alt={match.home_name || "Home Team"}
+              className="w-20 h-20 sm:w-28 sm:h-28 mx-auto mb-2 object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement
+                target.src = "/placeholder.svg?height=80&width=80"
+              }}
+            />
+            <img
+              src={match.away_img || "/placeholder.svg?height=80&width=80"}
+              alt={match.away_name || "Away Team"}
+              className="w-20 h-20 sm:w-28 sm:h-28 mx-auto mb-6 object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement
+                target.src = "/placeholder.svg?height=80&width=80"
+              }}
+            />
+            <div className="mb-4">
+              <span className="block text-lg sm:text-xl font-semibold text-gray-700 mb-2">
+                {status === "upcoming" ? "Match starts in:" : "Match starts soon"}
+              </span>
+              <div className="flex justify-center">
+                <CountdownTimer
+                  targetTime={match.match_time}
                 />
-                <h2 className="text-base sm:text-lg font-bold">{match.home_name || "Home Team"}</h2>
-              </div>
-
-              <div className="col-span-1 sm:col-span-3 text-center flex flex-col items-center">
-                {status === "upcoming" ? (
-                  <CountdownTimer targetTime={match.match_time} />
-                ) : (
-                  <>
-                    <p className="text-xs sm:text-sm font-medium text-gray-600">{date}</p>
-                    <p className="text-lg sm:text-xl font-bold">{time}</p>
-                  </>
-                )}
-              </div>
-
-              <div className="col-span-1 sm:col-span-4 text-center flex flex-col items-center">
-                <img
-                  src={match.away_img || "/placeholder.svg?height=80&width=80"}
-                  alt={match.away_name || "Away Team"}
-                  className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-2 object-contain"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement
-                    target.src = "/placeholder.svg?height=80&width=80"
-                  }}
-                />
-                <h2 className="text-base sm:text-lg font-bold">{match.away_name || "Away Team"}</h2>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {!canWatch && (
-          <Card className="mb-4 sm:mb-6">
-            <CardContent className="p-4 sm:p-6 text-center">
-              <h3 className="text-base sm:text-lg font-semibold mb-2">Stream Not Available Yet</h3>
-              <p className="text-gray-600 mb-4 text-sm sm:text-base">The stream will be available 10 minutes before the match starts.</p>
-              <CountdownTimer targetTime={match.match_time} />
-            </CardContent>
-          </Card>
-        )}
-
-        {canWatch && (
-          <div className="rounded-lg overflow-hidden mb-4">
+            <p className="text-gray-600 text-base sm:text-lg">
+              {match.links && match.links.length > 0
+                ? "The stream will be available 10 minutes before the match starts."
+                : "No stream link available for this match."}
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-lg overflow-hidden mb-4 bg-black">
             <ArtPlayer
-              streams={match.links || []}
+              streams={match.links}
               matchId={matchId}
               onStreamChange={(url) => console.log("Stream changed to:", url)}
             />
