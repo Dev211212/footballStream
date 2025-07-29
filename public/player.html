@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta content="never" name="referrer">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MM FOT</title>
+    <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
+    <script src="https://cdn.jsdelivr.net/npm/daisyui@5.0.43/index.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.30.1/moment.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.43/moment-timezone-with-data.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flv.js/1.6.2/flv.min.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/8.0.0-beta.3/hls.min.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/md5.js"></script>
+    <script src="https://static.sonartech.io/lib/1.0.0/sonar.js?appId=app_9eebc533&isDebug=true"></script>
+    <style>
+        html {
+            overscroll-behavior-x: none;
+        }
+
+        body {
+            min-height: 100vh;
+            height: auto;
+            --bg-color: var(--tg-theme-section-bg-color, #fff);
+            --card-bg-color: var(--tg-theme-bg-color, #fff);
+            font-family: sans-serif;
+            background-color: var(--bg-color);
+            color: var(--tg-theme-text-color, #222);
+            margin: 0;
+            padding: 0;
+            color-scheme: var(--tg-color-scheme);
+        }
+
+        body.gray {
+            background-color: var(--tg-theme-section-bg-color, #efefef);
+        }
+
+        section {
+            padding: 8px;
+            text-align: center;
+            background-color: var(--bg-color, #ffffff);
+            padding-left: calc(var(--tg-safe-area-inset-left, 0px) + var(--tg-content-safe-area-inset-left, 0px) + 8px);
+            padding-right: calc(var(--tg-safe-area-inset-right, 0px) + var(--tg-content-safe-area-inset-right, 0px) + 8px);
+            padding-top: calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px) + 15px);
+        }
+
+        .button {
+            background-color: var(--card-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #222);
+        }
+
+        .timer-mm {
+            margin-top: 1rem;
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--tg-theme-text-color, #222);
+        }
+
+        .card {
+            background-color: var(--card-bg-color, #ffffff);
+        }
+
+        @keyframes beat {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+        }
+
+        .animate-beat {
+            animation: beat 1s infinite;
+        }
+
+        /* Custom styles for player cards */
+        #player-buttons .custom-card {
+            background-color: var(--card-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #222);
+        }
+
+        #player-buttons .custom-card:hover {
+            transform: scale(1.05);
+        }
+
+        #player-buttons .custom-card.selected {
+            background-color: #2f2f2f;
+            color: #ffffff;
+        }
+
+        #bnmmfot {
+            margin-top: 15px;
+            width: 100%;
+            height: 70px;
+            /* Adjust height as needed for the ad */
+        }
+
+        .skeleton-card {
+            background-color: var(--card-bg-color, #ffffff);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), 0 2px 3px rgba(0, 0, 0, 0.24);
+            border-radius: 8px;
+            padding: 16px;
+            animation: pulse 1.5s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .skeleton-square {
+            width: 46px;
+            height: 46px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 8px;
+            animation: shimmer 1.5s infinite;
+            margin-bottom: 2px;
+        }
+
+        .skeleton-line {
+            width: 4rem;
+            /* Equivalent to Tailwind's w-36 */
+            height: 14px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            border-radius: 4px;
+            animation: shimmer 1.5s infinite;
+            margin: 4px;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <section>
+        <div class="flex gap-3 justify-center">
+            <a href="javascript:Telegram.WebApp.openTelegramLink('https://t.me/mmfottv');">
+                <button id="join_btn"
+                    class="btn text-sm md:text-base px-4 py-2 rounded-lg shadow-lg button h-auto min-h-[44px] no-hover flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-telegram w-6 h-6 fill-current"
+                        viewBox="0 0 16 16" fill="var(--tg-theme-text-color, #212121)">
+                        <path
+                            d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.287 5.906q-1.168.486-4.666 2.01-.567.225-.595.442c-.03.243.275.339.69.47l.175.055c.408.133.958.288 1.243.294q.39.01.868-.32 3.269-2.206 3.374-2.23c.05-.012.12-.026.166.016s.042.12.037.141c-.03.129-1.227 1.241-1.846 1.817-.193.18-.33.307-.358.336a8 8 0 0 1-.188.186c-.38.366-.664.64.015 1.088.327.216.589.393.85.571.284.194.568.387.936.629q.14.092.27.187c.331.236.63.448.997.414.214-.02.435-.22.547-.82.265-1.417.786-4.486.906-5.751a1.4 1.4 0 0 0-.013-.315.34.34 0 0 0-.114-.217.53.53 0 0 0-.31-.093c-.3.005-.763.166-2.984 1.09" />
+                    </svg>
+                    Join Telegram
+                </button></a>
+            <button id="reload_btn"
+                class="btn text-sm md:text-base px-4 py-2 rounded-lg shadow-lg button h-auto min-h-[44px] no-hover flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 fill-current" viewBox="0 -960 960 960"
+                    fill="var(--tg-theme-text-color, #212121)">
+                    <path
+                        d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z" />
+                </svg>
+                Reload
+            </button>
+        </div>
+        <img src="/img/info-reload.png" alt="Info" class="w-3/5 md:w-[400px] h-auto mx-auto">
+        <div id="match-detail">
+            <div class="skeleton-card grid grid-cols-11 gap-2 w-full mt-2 shadow-xl items-center">
+                <div class="col-span-4 flex flex-col items-center home-name">
+                    <div class="skeleton-square"></div>
+                    <div class="skeleton-line"></div>
+                </div>
+                <div class="col-span-3 flex flex-col items-center match-date match-time">
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line"></div>
+                </div>
+                <div class="col-span-4 flex flex-col items-center away-name">
+                    <div class="skeleton-square"></div>
+                    <div class="skeleton-line"></div>
+                </div>
+            </div>
+        </div>
+        <div id="match-player"></div>
+    </section>
+    <script>
+        let art;
+        const urlParams = new URLSearchParams(window.location.search);
+        const matchId = urlParams.get('id');
+        const isUrlFullscreen = urlParams.get('fullscreen') === 'true';
+        const tg = window.Telegram?.WebApp;
+
+        // Initialize Telegram WebApp if available
+        if (tg) {
+            tg.ready();
+            tg.expand();
+            tg.BackButton.hide();
+        }
+
+        const MMFotApp = {
+            encryptionKey: "devxseven",
+            fileName: "matches.json",
+            filePath: "mdata",
+            accName: "devxseven",
+            showtime: 600000,
+            now: moment.tz("Asia/Yangon"),
+            authKey: null,
+
+            init() {
+                this.authKey = this.generateAuthKey();
+                this.initReload();
+                this.initLoadMatches();
+                if (tg) {
+                    this.initBackButton();
+                }
+            },
+
+            initBackButton() {
+                if (tg) {
+                    tg.BackButton.show();
+                    tg.BackButton.onClick(() => {
+                        window.history.back();
+                    });
+                }
+            },
+
+            initReload() {
+                const reloadBtn = document.getElementById('reload_btn');
+                reloadBtn.addEventListener('click', () => this.reloadApp());
+            },
+
+            reloadApp() {
+                window.location.reload();
+            },
+
+            initLoadMatches() {
+                const key = 'ghp_NSe';
+                const defaultValue = '8ALuVwWUOHdLS3U54FsHJBKySNJ00tLOQ';
+
+                this.loadMatchesWithKey(key, defaultValue)
+                    .then(matches => {
+                        this.upcomingMatchesView(matches);
+                    })
+                    .catch(error => {
+                        console.warn('loadMatchesWithKey failed, attempting loadMatches:', error);
+                        this.loadMatches()
+                            .then(matches => {
+                                this.matchDetailView(matches);
+                            })
+                            .catch(error => {
+                                console.error('Error initializing app:', error);
+                                document.getElementById('match-player').innerHTML = '<p class="text-center text-red-500">Error loading match.</p>';
+                            });
+                    });
+            },
+
+            decryptString(encryptedBase64, key) {
+                if (!encryptedBase64 || typeof encryptedBase64 !== 'string') return '';
+                if (!key) return encryptedBase64;
+                try {
+                    const decoded = atob(encryptedBase64);
+                    let decrypted = "";
+                    for (let i = 0; i < decoded.length; i++) {
+                        const charCode = decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+                        decrypted += String.fromCharCode(charCode);
+                    }
+                    return decodeURIComponent(decrypted);
+                } catch (error) {
+                    return encryptedBase64;
+                }
+            },
+
+            decryptObject(encryptedObj, key) {
+                if (!encryptedObj || typeof encryptedObj !== 'object') return {};
+                const decryptedObj = {};
+                for (const [k, v] of Object.entries(encryptedObj)) {
+                    try {
+                        const decryptedKey = this.decryptString(k, key);
+                        const decryptedValue = JSON.parse(this.decryptString(v, key));
+                        decryptedObj[decryptedKey] = decryptedValue;
+                    } catch (error) {
+                        decryptedObj[k] = v;
+                    }
+                }
+                return decryptedObj;
+            },
+
+            async fetchAndDecryptJson() {
+                const response = await fetch(`https://raw.githubusercontent.com/${this.accName}/${this.filePath}/refs/heads/main/${this.fileName}`);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const encryptedData = await response.json();
+                const decryptedData = this.decryptObject(encryptedData, this.encryptionKey);
+                return decryptedData.context || [];
+            },
+
+            async fetchAndDecryptJsonWithKey(key, value) {
+                const url = `https://api.github.com/repos/${this.accName}/${this.filePath}/contents/${this.fileName}`;
+                const response = await fetch(url, {
+                    headers: {
+                        "Authorization": `token ${key}${value}`,
+                        "User-Agent": "GitHub-Admin-Panel"
+                    }
+                });
+                const data = await response.json();
+                const content = JSON.parse(atob(data.content));
+                const decryptedData = this.decryptObject(content, this.encryptionKey);
+                return decryptedData.context || [];
+            },
+
+            async loadMatches() {
+                return await this.fetchAndDecryptJson();
+            },
+
+            async loadMatchesWithKey(key, value) {
+                return await this.fetchAndDecryptJsonWithKey(key, value);
+            },
+
+            matchDetailView(matches) {
+                if (!matchId) {
+                    document.getElementById('match-player').innerHTML = '<p class="text-center text-red-500">No match ID provided.</p>';
+                    return;
+                }
+                const match = matches.find(m => m.id === matchId);
+                if (!match) {
+                    document.getElementById('match-player').innerHTML = '<p class="text-center text-red-500">Match not found.</p>';
+                    return;
+                }
+
+                const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const matchDateTime = moment.tz(match.match_time * 1000, userTimezone);
+                const distance = matchDateTime.diff(this.now);
+
+                this.displayMatchDetails(match, distance);
+
+                if (distance <= this.showtime) {
+                    this.showArtPlayer(match);
+                } else {
+                    this.showCountdown(match, distance);
+                }
+            },
+
+            displayMatchDetails(match, distance) {
+                const matchDetail = document.getElementById('match-detail');
+                matchDetail.innerHTML = '';
+                const card = document.createElement('div');
+                card.className = 'card shadow-xl p-1 flex flex-col items-center';
+                const isLive = distance <= this.showtime;
+                const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const matchDateTime = moment.tz(match.match_time * 1000, userTimezone);
+                const formattedDate = matchDateTime.format('MMM D');
+                const formattedTime = matchDateTime.format('hh:mm A');
+                card.innerHTML = `
+                    <h2 class="text-xs md:text-sm p-1 font-bold text-center league">${match.league || ''}</h2>
+                    <div class="grid grid-cols-11 gap-2 w-full text-center mt-2">
+                        <div class="col-span-4 flex flex-col items-center home-name">
+                            <img src="${match.home_img || ''}" alt="Home Team" class="w-12 h-12 object-contain" onerror="this.src='default-image.png'">
+                            <p class="text-[9px] md:text-[11px] pt-1 font-semibold">${match.home_name || ''}</p>
+                        </div>
+                        <div class="col-span-3 flex flex-col items-center match-date match-time">
+                            <p class="text-xs md:text-sm font-semibold">${formattedDate || ''}</p>
+                            <p class="text-xs md:text-sm font-bold">${formattedTime || ''}</p>
+                            ${isLive ? '<p class="text-xs md:text-sm text-red-500 font-bold animate-beat">⬤ LIVE</p>' : ''}
+                        </div>
+                        <div class="col-span-4 flex flex-col items-center away-name">
+                            <img src="${match.away_img || ''}" alt="Away Team" class="w-12 h-12 object-contain" onerror="this.src='default-image.png'">
+                            <p class="text-[9px] md:text-[11px] pt-1 font-semibold">${match.away_name || ''}</p>
+                        </div>
+                    </div>
+                `;
+                matchDetail.appendChild(card);
+            },
+
+            showCountdown(match, distance) {
+                const matchPlayer = document.getElementById('match-player');
+                const countdownElement = document.createElement('div');
+                countdownElement.className = 'timer-mm';
+                countdownElement.innerHTML = `The match will start in <span id="countdown">00:00:00</span>.`;
+                matchPlayer.appendChild(countdownElement);
+
+                const countdownInterval = setInterval(() => {
+                    distance -= 1000;
+                    this.updateCountdownUI(distance);
+                    if (distance <= this.showtime) {
+                        clearInterval(countdownInterval);
+                        this.displayMatchDetails(match, distance);
+                        this.showArtPlayer(match);
+                    }
+                }, 1000);
+            },
+
+            updateCountdownUI(distance) {
+                const countdownElement = document.getElementById('countdown');
+                if (countdownElement) {
+                    const hours = Math.floor(distance / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                    const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    countdownElement.innerHTML = `${formattedTime}`;
+                }
+            },
+
+            showArtPlayer(match) {
+                const matchPlayer = document.getElementById('match-player');
+                matchPlayer.innerHTML = `
+                    <div id="art-player" class="w-full bg-black my-4"></div>
+                    <div id="player-buttons"></div>`;
+
+                const updateHeight = () => {
+                    const artPlayer = document.getElementById('art-player');
+                    if (!artPlayer) return;
+
+                    const viewportHeight = tg ? (tg.viewportHeight || window.innerHeight) : window.innerHeight;
+                    const customHeight = viewportHeight * 0.4;
+                    artPlayer.style.height = `${customHeight}px`;
+                };
+
+                updateHeight();
+                if (tg) {
+                    tg.onEvent('viewportChanged', updateHeight);
+                }
+                window.addEventListener('resize', updateHeight);
+
+                this.addPlayerButtons(match);
+            },
+
+            generateAuthKey() {
+                const date = new Date();
+                const options = { timeZone: 'Asia/Baku', hour12: false };
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    ...options, year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
+                const parts = formatter.formatToParts(date);
+                const dateTime = {};
+                parts.forEach(({ type, value }) => dateTime[type] = value);
+                const adenDate = new Date(`${dateTime.year}-${dateTime.month}-${dateTime.day}T${dateTime.hour}:${dateTime.minute}:${dateTime.second}+03:00`);
+                const timestamp = Math.floor(adenDate.getTime() / 1000);
+                const randomNumber = Math.floor(Math.random() * 9000000000) + 1000000000;
+                const constant = "0-0";
+                const hash = this.md5(`${timestamp}${randomNumber}`);
+                return `${timestamp}-${constant}-${hash}`;
+            },
+
+            md5(string) {
+                return CryptoJS.MD5(string).toString();
+            },
+
+            detectAppleDevice() {
+                const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+                if (/Macintosh|MacIntel|MacPPC|Mac68K/.test(userAgent)) return false;
+                if (/iPad|iPhone|iPod/.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return false;
+                return true;
+            },
+
+            initializePlayer(initialUrl) {
+                if (art) art.destroy();
+                art = new Artplayer({
+                    container: '#art-player',
+                    url: initialUrl,
+                    autoplay: true,
+                    isLive: true,
+                    fullscreenWeb: true,
+                    autoOrientation: true,
+                    layers: [{
+                        html: '<span style="color:yellow; font-weight: 700; font-size: smaller;">mmfot.com</span>',
+                        style: { position: 'absolute', top: '0px', right: '3px', opacity: '1' },
+                    }],
+                    controls: [{
+                        position: 'left',
+                        html: '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFF"><path d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z"/></svg>',
+                        index: 20,
+                        tooltip: 'Reload',
+                        click: function () {
+                            art.url = initialUrl;
+                        },
+                    }, {
+                        position: 'left',
+                        html: '<span class="dot" style="height: 6px; width: 6px; background-color: red; border-radius: 50%; display: inline-block; margin-right: 5px;"></span><span style="color:white; font-weight: 900; font-size: smaller;">Live</span>',
+                        index: 40,
+                    }, {
+                        position: 'right',
+                        html: `
+                        <i class="art-icon art-icon-fullscreenWebOnCus" style="display: inline-flex;">
+                            <svg class="icon" width="22" height="22" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+                                <path fill="#fff" d="M625.778 256H768v142.222h113.778v-256h-256V256zM256 398.222V256h142.222V142.222h-256v256H256zm512 227.556V768H625.778v113.778h256v-256H768zM398.222 768H256V625.778H142.222v256h256V768z"></path>
+                            </svg>
+                        </i>
+                        <i class="art-icon art-icon-fullscreenWebOffCus" style="display: none;">
+                            <svg class="icon" width="22" height="22" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+                                <path fill="#fff" d="M768 298.667h170.667V384h-256V128H768v170.667zM341.333 384h-256v-85.333H256V128h85.333v256zM768 725.333V896h-85.333V640h256v85.333H768zM341.333 640v256H256V725.333H85.333V640h256z"></path>
+                            </svg>
+                        </i>
+                    `,
+                        tooltip: 'Fullscreen',
+                        index: 100,
+                        click: async function () {
+                            const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+                            try {
+                                if (tg) {
+                                    if (!isUrlFullscreen) {
+                                        if (!art.fullscreenWeb) {
+                                            await Telegram.WebApp.requestFullscreen(); // Assumes requestFullscreen returns a Promise
+                                            await delay(1000); // 1-second delay
+                                            art.fullscreenWeb = !art.fullscreenWeb;
+                                        } else {
+                                            Telegram.WebApp.exitFullscreen();
+                                            art.fullscreenWeb = !art.fullscreenWeb;
+                                        }
+                                    } else {
+                                        art.fullscreenWeb = !art.fullscreenWeb;
+                                    }
+                                }
+                            } catch (err) {
+                                console.error('Error accessing fullscreen setting:', err);
+                                art.fullscreen = !art.fullscreen;
+                            }
+                        },
+                    }],
+                    customType: {
+                        m3u8: function (video, url, art) {
+                            if (Hls.isSupported()) {
+                                if (art.hls) art.hls.destroy();
+                                const hls = new Hls();
+                                hls.loadSource(url);
+                                hls.attachMedia(video);
+                                art.hls = hls;
+                                art.on('destroy', () => hls.destroy());
+                            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                                video.src = url;
+                            } else {
+                                art.notice.show = 'Unsupported playback format: m3u8';
+                            }
+                        },
+                        flv: function (video, url, art) {
+                            if (flvjs.isSupported()) {
+                                if (art.flv) art.flv.destroy();
+                                const flv = flvjs.createPlayer({ type: 'flv', url });
+                                flv.attachMediaElement(video);
+                                flv.load();
+                                art.flv = flv;
+                                art.on('destroy', () => flv.destroy());
+                            } else {
+                                art.notice.show = 'Unsupported playback format: flv';
+                            }
+                        },
+                    },
+                });
+
+                art.on('fullscreenWeb', (state) => {
+                    const artPlayer = document.getElementById('art-player');
+                    const controlsLeft = artPlayer.querySelector('.art-video-player.art-mobile .art-controls-left');
+                    const videoLeft = artPlayer.querySelector('.art-video-player.art-mobile .art-video');
+
+                    (async () => {
+                        try {
+                            if (!isUrlFullscreen && !state) {
+                                Telegram.WebApp.exitFullscreen();
+                            }
+                        } catch (err) {
+                            console.error('Error accessing fullscreen setting:', err);
+                        }
+
+                        if (state) { // fullscreenWeb is true
+                            if (videoLeft) {
+                                videoLeft.style.position = 'absolute';
+                                videoLeft.style.left = `var(--tg-safe-area-inset-top, 0px)`;
+                            }
+                            controlsLeft.style.paddingLeft = `calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px) + 15px)`;
+                        } else { // fullscreenWeb is false
+                            if (videoLeft) {
+                                videoLeft.style.left = '0';
+                            }
+                            controlsLeft.style.paddingLeft = '0';
+                        }
+                        const onIcon = document.querySelector('.art-icon-fullscreenWebOnCus');
+                        const offIcon = document.querySelector('.art-icon-fullscreenWebOffCus');
+                        if (!onIcon || !offIcon) {
+                            console.error('Fullscreen icons not found in click handler:', this.innerHTML);
+                            return;
+                        }
+                        onIcon.style.display = state ? 'none' : 'inline-flex';
+                        offIcon.style.display = state ? 'inline-flex' : 'none';
+                    })();
+                });
+                art.on('fullscreen', (state) => {
+                    const onIcon = document.querySelector('.art-icon-fullscreenWebOnCus');
+                    const offIcon = document.querySelector('.art-icon-fullscreenWebOffCus');
+                    if (!onIcon || !offIcon) {
+                        console.error('Fullscreen icons not found in click handler:', this.innerHTML);
+                        return;
+                    }
+                    onIcon.style.display = state ? 'none' : 'inline-flex';
+                    offIcon.style.display = state ? 'inline-flex' : 'none';
+                });
+            },
+
+            isMobileDevice() {
+                return /Mobi|Android|iPhone|iPad|iPod/.test(navigator.userAgent);
+            },
+
+            addPlayerButtons(match) {
+                const playerButtons = document.getElementById('player-buttons');
+                if (match.links && match.links.length > 0) {
+                    const deviceType = this.detectAppleDevice();
+                    playerButtons.className = 'my-2 grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 justify-items-center px-2';
+                    playerButtons.innerHTML = '';
+                    match.links.forEach((link, index) => {
+                        if (link.url) {
+                            const url = link.url;
+                            const name = link.name;
+
+                            const card = document.createElement('div');
+                            card.className = 'custom-card card shadow-lg rounded-lg w-full max-w-[200px] text-xs md:text-base font-bold flex items-center justify-center py-4 cursor-pointer hover:scale-105 transition-transform duration-200 ease-in-out';
+                            card.innerHTML = `<strong>${name}</strong>`;
+
+                            const btnUrl = this.generateStreamUrl(url, name);
+                            card.onclick = () => {
+                                const cards = document.querySelectorAll('#player-buttons .custom-card');
+                                cards.forEach(c => c.classList.remove('selected'));
+                                card.classList.add('selected');
+                                this.initializePlayer(btnUrl);
+                            };
+
+                            if (name === 'VN HD 1') {
+                                card.classList.add('selected');
+                                this.initializePlayer(btnUrl);
+                            }
+
+                            playerButtons.appendChild(card);
+                        }
+                    });
+                }
+            },
+
+            generateStreamUrl(url, name) {
+                let btnUrl = '';
+                const deviceType = this.detectAppleDevice();
+                if (url.includes('http')) {
+                    if (url.includes('pull.niur.live')) {
+                        btnUrl = deviceType
+                            ? url.replace('.m3u8', '.flv')
+                            : url;
+                    } else {
+                        btnUrl = url; // Use the original URL if V HD or V SD is not in the name
+                    }
+                } else if (name.includes('V HD')) {
+                    btnUrl = `https://pull.niues.live/live/stream-${url}_lhd.m3u8?auth_key=${this.authKey}`;
+                } else if (name.includes('V SD')) {
+                    btnUrl = `https://pull.niues.live/live/stream-${url}_lsd.m3u8?auth_key=${this.authKey}`;
+                } else if (name.includes('C HD')) {
+                    btnUrl = deviceType
+                        ? `https://pull.dangaoka.com/live/stream-${url}_lhd.flv?auth_key=${this.authKey}`
+                        : `https://pull.dangaoka.com/live/stream-${url}_lhd.m3u8?auth_key=${this.authKey}`;
+                } else if (name.includes('C SD')) {
+                    btnUrl = deviceType
+                        ? `https://pull.dangaoka.com/live/stream-${url}_lsd.flv?auth_key=${this.authKey}`
+                        : `https://pull.dangaoka.com/live/stream-${url}_lsd.m3u8?auth_key=${this.authKey}`;
+                } else {
+                    btnUrl = url;
+                }
+                return btnUrl;
+            },
+        };
+
+        MMFotApp.init();
+    </script>
+</body>
+
+</html>
