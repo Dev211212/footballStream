@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useEffect, useRef, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -32,6 +31,10 @@ export function ArtPlayer({ streams, matchId, onStreamChange }: ArtPlayerProps) 
   const [authKey, setAuthKey] = useState<string>("")
   const [scriptsLoaded, setScriptsLoaded] = useState(false)
   const [loadingError, setLoadingError] = useState<string | null>(null)
+  const [dataUsage, setDataUsage] = useState<number>(0)
+  const [realDataUsage, setRealDataUsage] = useState<number>(0)
+  const [playStartTime, setPlayStartTime] = useState<number | null>(null)
+  const BITRATE_MBPS = 2 // Estimated bitrate in Mbps
 
   // Generate authentication key
   const generateAuthKey = () => {
@@ -252,6 +255,98 @@ export function ArtPlayer({ streams, matchId, onStreamChange }: ArtPlayerProps) 
     }
   }
 
+  // Detect theme from document
+  const getCurrentTheme = () => {
+    if (typeof document !== "undefined") {
+      return document.documentElement.classList.contains("dark") ? "dark" : "light"
+    }
+    return "light"
+  }
+
+  // Listen for theme changes and update ArtPlayer background
+  useEffect(() => {
+    const updateTheme = () => {
+      const theme = getCurrentTheme()
+      if (playerRef.current) {
+        playerRef.current.style.background = theme === "dark" ? "#18181b" : "#fff"
+      }
+    }
+    updateTheme()
+    document.documentElement.addEventListener("classlistchange", updateTheme)
+    return () => {
+      document.documentElement.removeEventListener("classlistchange", updateTheme)
+    }
+  }, [])
+
+  // Track playback time for data usage
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+    if (artPlayerRef.current) {
+      artPlayerRef.current.on("play", () => {
+        setPlayStartTime(Date.now())
+      })
+      artPlayerRef.current.on("pause", () => {
+        setPlayStartTime(null)
+      })
+      artPlayerRef.current.on("destroy", () => {
+        setPlayStartTime(null)
+      })
+    }
+    if (playStartTime) {
+      interval = setInterval(() => {
+        const elapsedSec = (Date.now() - playStartTime) / 1000
+        // Data usage in MB: bitrate(Mbps) * seconds / 8 (bits to bytes)
+        setDataUsage((prev) => prev + (BITRATE_MBPS * (1 / 8)))
+      }, 1000)
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [playStartTime, selectedStream, scriptsLoaded])
+
+  // Track real downloaded data from video element
+  useEffect(() => {
+    let videoEl: HTMLVideoElement | null = null
+    let lastBytesLoaded = 0
+
+    const updateUsage = () => {
+      if (!videoEl) return
+      try {
+        // For most browsers, video.buffered and video.seekable are available
+        // But bytes loaded is not directly exposed, so we estimate using buffer ranges
+        if (videoEl.buffered.length > 0) {
+          // Estimate bytes loaded by duration buffered * bitrate
+          const bufferedSeconds = videoEl.buffered.end(videoEl.buffered.length - 1) - videoEl.buffered.start(0)
+          // Use actual bitrate if available, else fallback to BITRATE_MBPS
+          const bitrate = BITRATE_MBPS * 1024 * 1024 // bits per second
+          const bytesLoaded = bufferedSeconds * bitrate / 8 // bytes
+          if (bytesLoaded > lastBytesLoaded) {
+            lastBytesLoaded = bytesLoaded
+            setRealDataUsage(bytesLoaded / (1024 * 1024)) // MB
+          }
+        }
+      } catch (e) {
+        // ignore errors
+      }
+    }
+
+    if (playerRef.current) {
+      // Find video element inside player
+      videoEl = playerRef.current.querySelector("video")
+      if (videoEl) {
+        videoEl.addEventListener("progress", updateUsage)
+        videoEl.addEventListener("loadeddata", updateUsage)
+      }
+    }
+
+    return () => {
+      if (videoEl) {
+        videoEl.removeEventListener("progress", updateUsage)
+        videoEl.removeEventListener("loadeddata", updateUsage)
+      }
+    }
+  }, [selectedStream, scriptsLoaded])
+
   // Handle stream selection
   const handleStreamSelect = (stream: StreamLink) => {
     const streamUrl = generateStreamUrl(stream.url, stream.name)
@@ -335,8 +430,12 @@ export function ArtPlayer({ streams, matchId, onStreamChange }: ArtPlayerProps) 
         <CardContent className="p-0">
           <div
             ref={playerRef}
-            className="w-full bg-black rounded-lg overflow-hidden"
-            style={{ aspectRatio: "16/9", minHeight: "300px" }}
+            className="w-full rounded-lg overflow-hidden"
+            style={{
+              aspectRatio: "16/9",
+              minHeight: "300px",
+              background: getCurrentTheme() === "dark" ? "#18181b" : "#fff",
+            }}
           />
         </CardContent>
       </Card>

@@ -1,24 +1,22 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useContext } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Search, Calendar, Play } from "lucide-react"
+import { Calendar, Play, Sun, Moon } from "lucide-react"
 import { fetchMatches } from "@/lib/api"
 import type { Match } from "@/types/match"
 import Link from "next/link"
+import { ThemeContext } from "../ThemeContext"
 
 export default function HomePage() {
   const [matches, setMatches] = useState<Match[]>([])
-  const [filteredMatches, setFilteredMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedLeague, setSelectedLeague] = useState("all")
-  const [statusFilter, setStatusFilter] = useState("all")
+  const [tab, setTab] = useState<"all" | "live">("all")
+  const [sportType, setSportType] = useState<string>("all")
+  const { theme, setTheme } = useContext(ThemeContext)
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -26,7 +24,6 @@ export default function HomePage() {
         setLoading(true)
         const data = await fetchMatches()
         setMatches(data)
-        setFilteredMatches(data)
       } catch (err) {
         setError("Failed to load matches")
         console.error("Error loading matches:", err)
@@ -38,46 +35,16 @@ export default function HomePage() {
     loadMatches()
   }, [])
 
-  useEffect(() => {
-    let filtered = matches
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (match) =>
-          match.home_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          match.away_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          match.league.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-    }
-
-    // Filter by league
-    if (selectedLeague !== "all") {
-      filtered = filtered.filter((match) => match.league === selectedLeague)
-    }
-
-    // Filter by status
-    if (statusFilter !== "all") {
-      const now = Date.now()
-      const showTime = 10 * 60 * 1000 // 10 minutes
-
-      filtered = filtered.filter((match) => {
-        const matchTime = match.match_time * 1000
-        const timeDiff = matchTime - now
-
-        if (statusFilter === "live") {
-          return timeDiff <= showTime && timeDiff > -2 * 60 * 60 * 1000
-        } else if (statusFilter === "upcoming") {
-          return timeDiff > showTime
-        } else if (statusFilter === "finished") {
-          return timeDiff <= -2 * 60 * 60 * 1000
-        }
-        return true
-      })
-    }
-
-    setFilteredMatches(filtered)
-  }, [matches, searchTerm, selectedLeague, statusFilter])
+  // Helper to get live matches
+  const getLiveMatches = () => {
+    const now = Date.now()
+    const showTime = 10 * 60 * 1000 // 10 minutes
+    return matches.filter((match) => {
+      const matchTime = match.match_time * 1000
+      const timeDiff = matchTime - now
+      return timeDiff <= showTime && timeDiff > -2 * 60 * 60 * 1000
+    })
+  }
 
   const getMatchStatus = (match: Match) => {
     const now = Date.now()
@@ -99,9 +66,17 @@ export default function HomePage() {
     return date.toLocaleString()
   }
 
-  const getUniqueLeagues = () => {
-    const leagues = [...new Set(matches.map((match) => match.league))]
-    return leagues.sort()
+  // Get unique sport types from matches
+  const getUniqueSports = () => {
+    const sports = [...new Set(matches.map((match) => match.sport_type || "Football"))]
+    return sports.sort()
+  }
+
+  // Tab logic
+  let displayedMatches = tab === "live" ? getLiveMatches() : matches
+  // Filter by sport type
+  if (sportType !== "all") {
+    displayedMatches = displayedMatches.filter(m => (m.sport_type || "Football") === sportType)
   }
 
   if (loading) {
@@ -127,89 +102,83 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-background">
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        {/* Theme Toggle Button */}
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            className="flex items-center gap-2 px-3 py-2 rounded border text-sm bg-white dark:bg-gray-900 dark:text-white"
+            aria-label="Toggle theme"
+            type="button"
+          >
+            {theme === "light" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+            {theme === "light" ? "Dark" : "Light"} Mode
+          </button>
+        </div>
+
         {/* Header */}
         <div className="mb-4 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Football Matches</h1>
           <p className="text-gray-600 text-sm sm:text-base">Watch live football matches from around the world</p>
         </div>
 
-        {/* Filters */}
-        <Card className="mb-4 sm:mb-6">
-          <CardHeader>
-            <CardTitle className="text-base sm:text-lg">Filters</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 sm:gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search teams or leagues..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 text-sm"
-                />
-              </div>
+        {/* Tabs */}
+        <div className="mb-4 flex gap-2">
+          <Button
+            variant={tab === "all" ? "default" : "outline"}
+            onClick={() => setTab("all")}
+            className="text-sm"
+          >
+            All Matches
+          </Button>
+          <Button
+            variant={tab === "live" ? "default" : "outline"}
+            onClick={() => setTab("live")}
+            className="text-sm"
+          >
+            Live Matches
+          </Button>
+        </div>
 
-              <Select value={selectedLeague} onValueChange={setSelectedLeague}>
-                <SelectTrigger className="text-sm">
-                  <SelectValue placeholder="All Leagues" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Leagues</SelectItem>
-                  {getUniqueLeagues().map((league) => (
-                    <SelectItem key={league} value={league}>
-                      {league}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="text-sm">
-                  <SelectValue placeholder="All Matches" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Matches</SelectItem>
-                  <SelectItem value="live">Live</SelectItem>
-                  <SelectItem value="upcoming">Upcoming</SelectItem>
-                  <SelectItem value="finished">Finished</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button
-                variant="outline"
-                className="text-sm"
-                onClick={() => {
-                  setSearchTerm("")
-                  setSelectedLeague("all")
-                  setStatusFilter("all")
-                }}
-              >
-                Clear Filters
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Sport Type Chips */}
+        <div className="mb-4 flex flex-wrap gap-2">
+          <Button
+            variant={sportType === "all" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSportType("all")}
+          >
+            All Sports
+          </Button>
+          {getUniqueSports().map((sport) => (
+            <Button
+              key={sport}
+              variant={sportType === sport ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSportType(sport)}
+            >
+              {sport}
+            </Button>
+          ))}
+        </div>
 
         {/* Results Count */}
         <div className="mb-2 sm:mb-4">
           <p className="text-gray-600 text-sm">
-            Showing {filteredMatches.length} of {matches.length} matches
+            Showing {displayedMatches.length} of {matches.length} matches
           </p>
         </div>
 
         {/* Matches List */}
         <div className="space-y-3 sm:space-y-4">
-          {filteredMatches.length === 0 ? (
+          {displayedMatches.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
-                <p className="text-gray-500">No matches found matching your filters</p>
+                <p className="text-gray-500">No matches found.</p>
               </CardContent>
             </Card>
           ) : (
-            filteredMatches.map((match) => {
+            displayedMatches.map((match) => {
               const matchStatus = getMatchStatus(match)
               return (
                 <Card key={match.id} className="hover:shadow-md transition-shadow">
